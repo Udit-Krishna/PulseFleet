@@ -42,6 +42,7 @@ SPARK_STEPS = [
                 "--deploy-mode",
                 "cluster",
                 f"s3://{S3_BUCKET}/emr-scripts/emr_batch_job.py",
+                "{{ ds }}",
             ],
         },
     }
