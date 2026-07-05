@@ -1,78 +1,31 @@
-# ─── Python ───────────────────────────────────────────────
+# Python
 __pycache__/
 *.py[cod]
-*$py.class
-*.pyo
-*.pyd
-
-# Virtual environments
 .venv/
 venv/
 env/
-ENV/
 .env
+.env.*
 
-# ─── PySpark / EMR / Hadoop ───────────────────────────────
-*.jar
-*.class
-metastore_db/
-derby.log
-spark-warehouse/
-spark-events/
-checkpoints/
-_temporary/
-output/
-tmp/
-temp/
-
-# ─── Kafka ────────────────────────────────────────────────
+# Kafka
 kafka-logs/
 *.log
 *.log.*
 
-# ─── Airflow ──────────────────────────────────────────────
-airflow.cfg
-airflow.db
-airflow-webserver.pid
-logs/
-unittests.cfg
-standalone_admin_password.txt
-
-# ─── AWS / Cloud credentials ──────────────────────────────
+# AWS / secrets
 .aws/
 *.pem
-*.p12
-*.pfx
 credentials
-
-# ─── Environment & secrets ────────────────────────────────
-.env
-.env.*
-*.env
 secrets.json
-config.local.*
 
-# ─── Data files ───────────────────────────────────────────
+# Data files
 *.csv
 *.parquet
-*.orc
-*.avro
 *.json.gz
 *.ndjson
-data/
-raw/
-processed/
-snapshots/
 
-# keep proof-of-run samples
-!pipeline-demo/screenshots/
-
-# ─── Dashboard (Streamlit / Dash) ─────────────────────────
-.streamlit/secrets.toml
-
-# ─── OS & editor artifacts ────────────────────────────────
+# OS / editor
 .DS_Store
-Thumbs.db
 *.swp
 *.swo
 *~
