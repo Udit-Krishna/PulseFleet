@@ -11,6 +11,10 @@ def main():
 
     spark = SparkSession.builder.appName("PulseFleetBatch").getOrCreate()
 
+    # Enable dynamic partition overwrite: only the partition(s) being written
+    # get replaced, everything else in the dataset stays untouched.
+    spark.conf.set("spark.sql.sources.partitionOverwriteMode", "dynamic")
+
     input_path = (
         f"s3://pulsefleet-project-bucket-uditks/raw-events/"
         f"year={year}/month={month}/day={day}/"
@@ -38,15 +42,16 @@ def main():
     hourly_demand = completed.groupBy("trip_date", "trip_hour", "city") \
         .agg(count("event_id").alias("trip_count"))
 
-    # Append mode + partitionBy so each day's run only adds its own partition,
-    # instead of overwriting the entire historical dataset.
+    # "overwrite" here, combined with dynamic partition overwrite mode above,
+    # replaces ONLY the trip_date partition being processed - safe to re-run
+    # for the same date without creating duplicates, and doesn't touch other days.
     daily_city_revenue.write \
-        .mode("append") \
+        .mode("overwrite") \
         .partitionBy("trip_date") \
         .parquet("s3://pulsefleet-project-bucket-uditks/curated/daily_revenue/")
 
     hourly_demand.write \
-        .mode("append") \
+        .mode("overwrite") \
         .partitionBy("trip_date") \
         .parquet("s3://pulsefleet-project-bucket-uditks/curated/hourly_demand/")
 
