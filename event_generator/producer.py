@@ -12,6 +12,7 @@ KAFKA_TOPIC = "ride-events"
 S3_BUCKET = "pulsefleet-project-bucket-uditks"
 S3_RAW_PREFIX = "raw-events"
 
+# flush to S3 after 500 events or 60s, whichever hits first
 BATCH_SIZE = 500
 BATCH_INTERVAL_SECONDS = 60
 
@@ -27,6 +28,7 @@ s3_client = boto3.client("s3")
 
 
 def generate_event():
+    # generate events with random key-value pairs (synthetic data)
     event_type = random.choice(EVENT_TYPES)
     base = {
         "event_id": f"evt_{random.randint(100000, 999999)}",
@@ -48,12 +50,14 @@ def flush_batch_to_s3(batch):
         return
 
     now = datetime.now(timezone.utc)
+    # partitioning so EMR can scan a single day's prefix
     key = (
         f"{S3_RAW_PREFIX}/"
         f"year={now.year}/month={now.month:02d}/day={now.day:02d}/"
         f"events_{now.strftime('%H%M%S')}_{random.randint(1000,9999)}.json"
     )
 
+    # write entire batch into one S3 object instead of one put_object per event
     buffer = io.StringIO()
     for event in batch:
         buffer.write(json.dumps(event) + "\n")
@@ -89,7 +93,7 @@ def main():
 
     except KeyboardInterrupt:
         print("\nStopping...")
-        flush_batch_to_s3(batch)
+        flush_batch_to_s3(batch)  # flush whatever's left before exiting
         producer.flush()
         producer.close()
 

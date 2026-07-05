@@ -11,6 +11,7 @@ def main():
     year, month, day = run_date.split("-")
 
     spark = SparkSession.builder.appName("PulseFleetBatch").getOrCreate()
+    # dynamic mode so overwrite only touches the partition being reprocessed
     spark.conf.set("spark.sql.sources.partitionOverwriteMode", "dynamic")
 
     input_path = (

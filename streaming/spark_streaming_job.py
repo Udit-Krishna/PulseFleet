@@ -15,6 +15,7 @@ spark = (
     .getOrCreate()
 )
 
+# S3A config — needed for Spark to write to s3a:// paths
 hadoop_conf = spark.sparkContext._jsc.hadoopConfiguration()
 hadoop_conf.set("fs.s3a.impl", "org.apache.hadoop.fs.s3a.S3AFileSystem")
 hadoop_conf.set(
@@ -24,7 +25,7 @@ hadoop_conf.set(
 hadoop_conf.set("fs.s3a.endpoint", "s3.ap-south-1.amazonaws.com")
 hadoop_conf.set("fs.s3a.endpoint.region", "ap-south-1")
 
-
+# schema must be defined explicitly — inferSchema doesn't work in streaming
 schema = StructType() \
     .add("event_id", StringType()) \
     .add("event_type", StringType()) \
@@ -39,10 +40,12 @@ raw_stream = spark.readStream \
     .option("subscribe", "ride-events") \
     .load()
 
+# kafka delivers value as bytes, cast to string before parsing
 parsed = raw_stream.select(
     from_json(col("value").cast("string"), schema).alias("data")
 ).select("data.*")
 
+# 5-min sliding window (slides every 1 min), watermark drops events >2 min late
 metrics = parsed.filter(col("event_type") == "trip_completed") \
     .withWatermark("timestamp", "2 minutes") \
     .groupBy(window(col("timestamp"), "5 minutes", "1 minute"), col("city")) \
