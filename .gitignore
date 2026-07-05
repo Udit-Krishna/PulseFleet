@@ -64,6 +64,9 @@ raw/
 processed/
 snapshots/
 
+# keep proof-of-run samples
+!pipeline-demo/screenshots/
+
 # ─── Dashboard (Streamlit / Dash) ─────────────────────────
 .streamlit/secrets.toml
 

@@ -14,6 +14,7 @@ spark = (
     )
     .getOrCreate()
 )
+spark.sparkContext.setLogLevel("ERROR")
 
 # S3A config — needed for Spark to write to s3a:// paths
 hadoop_conf = spark.sparkContext._jsc.hadoopConfiguration()

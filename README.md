@@ -179,3 +179,9 @@ Copy `orchestration/dags/emr_batch_dag.py` into your Airflow DAGs folder, config
 
 Built by Udit Krishna S as a personal Data Engineering project.
 [LinkedIn](https://linkedin.com/in/udit-krishna) | [GitHub](https://github.com/Udit-Krishna)
+
+---
+
+## Proof of Run
+
+Screenshots and sample output → [pipeline-demo/PIPELINE_DEMO.md](pipeline-demo/PIPELINE_DEMO.md)
