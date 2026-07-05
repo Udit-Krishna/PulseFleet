@@ -6,20 +6,18 @@ from datetime import datetime, timezone
 from kafka import KafkaProducer
 import boto3
 
-# ---- Config ----
 KAFKA_BOOTSTRAP_SERVERS = "localhost:9092"
 KAFKA_TOPIC = "ride-events"
 
 S3_BUCKET = "pulsefleet-project-bucket-uditks"
 S3_RAW_PREFIX = "raw-events"
 
-BATCH_SIZE = 500          # flush to S3 after this many events
-BATCH_INTERVAL_SECONDS = 60  # or flush after this many seconds, whichever comes first
+BATCH_SIZE = 500
+BATCH_INTERVAL_SECONDS = 60
 
 CITIES = ["Chennai", "Bangalore", "Mumbai", "Delhi", "Hyderabad"]
 EVENT_TYPES = ["trip_started", "trip_completed", "driver_location"]
 
-# ---- Clients ----
 producer = KafkaProducer(
     bootstrap_servers=KAFKA_BOOTSTRAP_SERVERS,
     value_serializer=lambda v: json.dumps(v).encode("utf-8"),
@@ -46,12 +44,10 @@ def generate_event():
 
 
 def flush_batch_to_s3(batch):
-    """Write a batch of events to S3 as a single newline-delimited JSON file."""
     if not batch:
         return
 
     now = datetime.now(timezone.utc)
-    # Partition by date/hour so the EMR batch job can scan efficiently later
     key = (
         f"{S3_RAW_PREFIX}/"
         f"year={now.year}/month={now.month:02d}/day={now.day:02d}/"
@@ -67,7 +63,7 @@ def flush_batch_to_s3(batch):
         Key=key,
         Body=buffer.getvalue().encode("utf-8"),
     )
-    print(f"[S3] Flushed {len(batch)} events to s3://{S3_BUCKET}/{key}")
+    print(f"[S3] Flushed {len(batch)} events → s3://{S3_BUCKET}/{key}")
 
 
 def main():
@@ -78,14 +74,11 @@ def main():
         while True:
             event = generate_event()
 
-            # 1. Send to Kafka for the real-time streaming path
             producer.send(KAFKA_TOPIC, event)
-            print(f"[Kafka] Sent: {event}")
+            print(f"[Kafka] {event}")
 
-            # 2. Add to in-memory batch for the S3 archive (batch path)
             batch.append(event)
 
-            # Flush condition: batch size OR time interval, whichever first
             time_elapsed = time.time() - last_flush_time
             if len(batch) >= BATCH_SIZE or time_elapsed >= BATCH_INTERVAL_SECONDS:
                 flush_batch_to_s3(batch)
@@ -95,8 +88,8 @@ def main():
             time.sleep(random.uniform(0.1, 0.5))
 
     except KeyboardInterrupt:
-        print("\nStopping producer, flushing remaining events...")
-        flush_batch_to_s3(batch)   # don't lose the last partial batch
+        print("\nStopping...")
+        flush_batch_to_s3(batch)
         producer.flush()
         producer.close()
 

@@ -2,6 +2,7 @@ import sys
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import col, to_date, sum as _sum, count, hour, lit
 
+
 def main():
     if len(sys.argv) < 2:
         raise ValueError("Usage: emr_batch_job.py <run_date YYYY-MM-DD>")
@@ -10,9 +11,6 @@ def main():
     year, month, day = run_date.split("-")
 
     spark = SparkSession.builder.appName("PulseFleetBatch").getOrCreate()
-
-    # Enable dynamic partition overwrite: only the partition(s) being written
-    # get replaced, everything else in the dataset stays untouched.
     spark.conf.set("spark.sql.sources.partitionOverwriteMode", "dynamic")
 
     input_path = (
@@ -20,12 +18,10 @@ def main():
         f"year={year}/month={month}/day={day}/"
     )
 
-    print(f"[INFO] Reading raw events from: {input_path}")
-
     df = spark.read.json(input_path)
 
     if df.rdd.isEmpty():
-        print(f"[WARN] No data found for {run_date}. Exiting without writing output.")
+        print(f"No data for {run_date}, exiting.")
         spark.stop()
         return
 
@@ -42,9 +38,6 @@ def main():
     hourly_demand = completed.groupBy("trip_date", "trip_hour", "city") \
         .agg(count("event_id").alias("trip_count"))
 
-    # "overwrite" here, combined with dynamic partition overwrite mode above,
-    # replaces ONLY the trip_date partition being processed - safe to re-run
-    # for the same date without creating duplicates, and doesn't touch other days.
     daily_city_revenue.write \
         .mode("overwrite") \
         .partitionBy("trip_date") \
@@ -55,10 +48,7 @@ def main():
         .partitionBy("trip_date") \
         .parquet("s3://pulsefleet-project-bucket-uditks/curated/hourly_demand/")
 
-    print(f"[INFO] Batch job complete for {run_date}. "
-          f"Rows written: daily_revenue={daily_city_revenue.count()}, "
-          f"hourly_demand={hourly_demand.count()}")
-
+    print(f"Done. daily_revenue={daily_city_revenue.count()}, hourly_demand={hourly_demand.count()}")
     spark.stop()
 
 

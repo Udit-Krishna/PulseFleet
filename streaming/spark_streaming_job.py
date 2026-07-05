@@ -43,7 +43,6 @@ parsed = raw_stream.select(
     from_json(col("value").cast("string"), schema).alias("data")
 ).select("data.*")
 
-# Rolling 5-min window: active trips + revenue per city
 metrics = parsed.filter(col("event_type") == "trip_completed") \
     .withWatermark("timestamp", "2 minutes") \
     .groupBy(window(col("timestamp"), "5 minutes", "1 minute"), col("city")) \
