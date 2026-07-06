@@ -1,5 +1,5 @@
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import from_json, col, window, count, avg
+from pyspark.sql.functions import from_json, col, window, count, avg, date_format
 from pyspark.sql.types import StructType, StringType, DoubleType, TimestampType
 
 spark = (
@@ -53,13 +53,15 @@ metrics = parsed.filter(col("event_type") == "trip_completed") \
     .agg(
         count("event_id").alias("completed_trips"),
         avg("fare").alias("avg_fare")
-    )
+    ) \
+    .withColumn("event_date", date_format(col("window").getField("start"), "yyyy-MM-dd"))
 
 query = metrics.writeStream \
     .outputMode("append") \
     .format("json") \
     .option("path", "s3a://pulsefleet-project-bucket-uditks/streaming-output/") \
     .option("checkpointLocation", "s3a://pulsefleet-project-bucket-uditks/checkpoints/") \
+    .partitionBy("event_date") \
     .trigger(processingTime="1 minute") \
     .start()
 
